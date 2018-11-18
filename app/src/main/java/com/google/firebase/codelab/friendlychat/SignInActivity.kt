@@ -26,14 +26,12 @@ import com.google.android.gms.auth.api.Auth
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.ConnectionResult
-import com.google.android.gms.common.SignInButton
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import kotlinx.android.synthetic.main.activity_sign_in.*
 
 class SignInActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedListener, View.OnClickListener {
-
-    private var mSignInButton: SignInButton? = null
 
     private var mGoogleApiClient: GoogleApiClient? = null
 
@@ -44,8 +42,7 @@ class SignInActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedLi
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sign_in)
 
-        mSignInButton = findViewById(R.id.sign_in_button)
-        mSignInButton!!.setOnClickListener(this)
+        signInButton.setOnClickListener(this)
 
         configureGoogleSignIn()
 
@@ -66,7 +63,7 @@ class SignInActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedLi
 
     override fun onClick(v: View) {
         when (v.id) {
-            R.id.sign_in_button -> signIn()
+            R.id.signInButton -> signIn()
         }
     }
 

@@ -33,11 +33,6 @@ import android.text.TextWatcher
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.ProgressBar
 import android.widget.Toast
 import com.firebase.ui.database.FirebaseRecyclerAdapter
 import com.firebase.ui.database.FirebaseRecyclerOptions
@@ -55,6 +50,7 @@ import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
+import kotlinx.android.synthetic.main.activity_main.*
 import java.util.*
 
 class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedListener {
@@ -64,12 +60,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
     private var mSharedPreferences: SharedPreferences? = null
     private var mGoogleApiClient: GoogleApiClient? = null
 
-    private var mSendButton: Button? = null
-    private var mMessageRecyclerView: RecyclerView? = null
     private var mLinearLayoutManager: LinearLayoutManager? = null
-    private var mProgressBar: ProgressBar? = null
-    private var mMessageEditText: EditText? = null
-    private var mAddMessageImageView: ImageView? = null
 
     // Firebase instance variables
     private var mFirebaseAuth: FirebaseAuth? = null
@@ -107,12 +98,9 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
             }
         }
 
-        // Initialize ProgressBar and RecyclerView.
-        mProgressBar = findViewById<View>(R.id.progressBar) as ProgressBar
-        mMessageRecyclerView = findViewById<View>(R.id.messageRecyclerView) as RecyclerView
         mLinearLayoutManager = LinearLayoutManager(this)
         mLinearLayoutManager!!.stackFromEnd = true
-        mMessageRecyclerView!!.layoutManager = mLinearLayoutManager
+        messageRecyclerView.layoutManager = mLinearLayoutManager
 
         // Initialize Firebase Remote Config.
         mFirebaseRemoteConfig = FirebaseRemoteConfig.getInstance()
@@ -150,7 +138,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
             .build()
         mFirebaseAdapter =
                 FriendlyMessageAdapter(
-                    options, mUsername, mProgressBar
+                    options, mUsername, progressBar
                 )
 
         mFirebaseAdapter!!.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
@@ -163,44 +151,38 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
                 // user is at the bottom of the list, scroll to the bottom
                 // of the list to show the newly added message.
                 if (lastVisiblePosition == -1 || positionStart >= friendlyMessageCount - 1 && lastVisiblePosition == positionStart - 1) {
-                    mMessageRecyclerView!!.scrollToPosition(positionStart)
+                    messageRecyclerView.scrollToPosition(positionStart)
                 }
             }
         })
 
-        mMessageRecyclerView!!.adapter = mFirebaseAdapter
+        messageRecyclerView.adapter = mFirebaseAdapter
 
-        mMessageEditText = findViewById<View>(R.id.messageEditText) as EditText
-        mMessageEditText!!.filters = arrayOf<InputFilter>(
+        messageEditText.filters = arrayOf<InputFilter>(
             InputFilter.LengthFilter(
                 mSharedPreferences!!
                     .getInt(CodelabPreferences.FRIENDLY_MSG_LENGTH, DEFAULT_MSG_LENGTH_LIMIT)
             )
         )
-        mMessageEditText!!.addTextChangedListener(object : TextWatcher {
+        messageEditText.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
 
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
-                mSendButton!!.isEnabled = charSequence.toString().trim { it <= ' ' }.isNotEmpty()
+                sendButton.isEnabled = charSequence.toString().trim { it <= ' ' }.isNotEmpty()
             }
 
             override fun afterTextChanged(editable: Editable) {}
         })
 
-        mSendButton = findViewById<View>(R.id.sendButton) as Button
-        mSendButton!!.setOnClickListener {
+        sendButton.setOnClickListener {
             // Send messages on click.
-            val friendlyMessage = FriendlyMessage(
-                text = mMessageEditText!!.text.toString(),
-                name = mUsername, userPhotoUrl = userPhotoUrl
-            )
-            mFirebaseDatabaseReference!!.child(MESSAGES_CHILD)
-                .push().setValue(friendlyMessage)
-            mMessageEditText!!.setText("")
+            val friendlyMessage =
+                FriendlyMessage(text = messageEditText.text.toString(), name = mUsername, userPhotoUrl = userPhotoUrl)
+            mFirebaseDatabaseReference!!.child(MESSAGES_CHILD).push().setValue(friendlyMessage)
+            messageEditText!!.setText("")
         }
 
-        mAddMessageImageView = findViewById<View>(R.id.addMessageImageView) as ImageView
-        mAddMessageImageView!!.setOnClickListener {
+        addMessageImageView.setOnClickListener {
             // Select image for image message on click.
             val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
             intent.addCategory(Intent.CATEGORY_OPENABLE)
@@ -241,8 +223,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
      */
     private fun applyRetrievedLengthLimit() {
         val friendlyMsgLength = mFirebaseRemoteConfig!!.getLong("friendly_msg_length")
-        mMessageEditText!!.filters =
-                arrayOf<InputFilter>(InputFilter.LengthFilter(friendlyMsgLength.toInt()))
+        messageEditText.filters = arrayOf<InputFilter>(InputFilter.LengthFilter(friendlyMsgLength.toInt()))
         Log.d(TAG, "FML is: $friendlyMsgLength")
     }
 
