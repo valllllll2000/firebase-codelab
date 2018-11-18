@@ -47,6 +47,7 @@ import com.google.android.gms.appinvite.AppInviteInvitation
 import com.google.android.gms.auth.api.Auth
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
+import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.database.DatabaseReference
@@ -79,6 +80,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
     private var mFirebaseAdapter: FirebaseRecyclerAdapter<FriendlyMessage, FriendlyMessageAdapter.MessageViewHolder>? =
         null
     private var mFirebaseRemoteConfig: FirebaseRemoteConfig? = null
+    private var mFirebaseAnalytics: FirebaseAnalytics? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -133,6 +135,8 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
 
         // Fetch remote config.
         fetchConfig()
+
+        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this)
 
         // New child entries
         mFirebaseDatabaseReference = FirebaseDatabase.getInstance().reference
@@ -306,46 +310,49 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
         super.onActivityResult(requestCode, resultCode, data)
         Log.d(TAG, "onActivityResult: requestCode=$requestCode, resultCode=$resultCode")
 
-        if (requestCode == REQUEST_IMAGE) {
-            if (resultCode == Activity.RESULT_OK) {
-                if (data != null) {
-                    val uri = data.data
-                    Log.d(TAG, "Uri: ${uri!!}")
-
-                    val tempMessage = FriendlyMessage(
-                        name = mUsername, userPhotoUrl = userPhotoUrl,
-                        imageUrl = LOADING_IMAGE_URL
-                    )
-                    mFirebaseDatabaseReference!!.child(MESSAGES_CHILD).push()
-                        .setValue(tempMessage) { databaseError, databaseReference ->
-                            if (databaseError == null) {
-                                val key = databaseReference.key
-                                val storageReference = FirebaseStorage.getInstance()
-                                    .getReference(mFirebaseUser!!.uid)
-                                    .child(key!!)
-                                    .child(uri.lastPathSegment!!)
-
-                                putImageInStorage(storageReference, uri, key)
-                            } else {
-                                Log.w(
-                                    TAG, "Unable to write message to database.",
-                                    databaseError.toException()
-                                )
-                            }
-                        }
-                }
-            } else if (requestCode == REQUEST_INVITE) {
+        when (requestCode) {
+            REQUEST_IMAGE ->
+                if (resultCode == Activity.RESULT_OK && data != null) {
+                    onImageReceived(data)
+            }
+            REQUEST_INVITE ->
                 if (resultCode == RESULT_OK) {
-                    // Check how many invitations were sent and log.
-                    val ids = data?.let { AppInviteInvitation.getInvitationIds(resultCode, it) }
-                        ?: emptyArray()
-                    Log.d(TAG, "Invitations sent: ${ids.size}")
+                    onInviteSuccessful(data, resultCode)
                 } else {
                     // Sending failed or it was canceled, show failure message to the user
                     Log.d(TAG, "Failed to send invitation.");
                 }
-            }
         }
+    }
+
+    private fun onInviteSuccessful(data: Intent?, resultCode: Int) {
+        val payload = Bundle()
+        payload.putString(FirebaseAnalytics.Param.VALUE, "sent")
+        mFirebaseAnalytics?.logEvent(FirebaseAnalytics.Event.SHARE, payload)
+        // Check how many invitations were sent and log.
+        val ids = data?.let { AppInviteInvitation.getInvitationIds(resultCode, it) } ?: emptyArray()
+        Log.d(TAG, "Invitations sent: ${ids.size}")
+    }
+
+    private fun onImageReceived(data: Intent) {
+        val uri = data.data
+        Log.d(TAG, "Uri: ${uri!!}")
+
+        val tempMessage = FriendlyMessage(name = mUsername, userPhotoUrl = userPhotoUrl, imageUrl = LOADING_IMAGE_URL)
+        mFirebaseDatabaseReference!!.child(MESSAGES_CHILD).push()
+            .setValue(tempMessage) { databaseError, databaseReference ->
+                if (databaseError == null) {
+                    val key = databaseReference.key
+                    val storageReference = FirebaseStorage.getInstance()
+                        .getReference(mFirebaseUser!!.uid)
+                        .child(key!!)
+                        .child(uri.lastPathSegment!!)
+
+                    putImageInStorage(storageReference, uri, key)
+                } else {
+                    Log.w(TAG, "Unable to write message to database.", databaseError.toException())
+                }
+            }
     }
 
     private fun putImageInStorage(storageReference: StorageReference, uri: Uri?, key: String?) {
