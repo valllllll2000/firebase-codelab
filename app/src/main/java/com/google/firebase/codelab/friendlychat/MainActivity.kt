@@ -24,7 +24,6 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
 import android.preference.PreferenceManager
-import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -32,19 +31,15 @@ import android.text.Editable
 import android.text.InputFilter
 import android.text.TextWatcher
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.ProgressBar
-import android.widget.TextView
 import android.widget.Toast
 
-import com.bumptech.glide.Glide
 import com.firebase.ui.database.FirebaseRecyclerAdapter
 import com.firebase.ui.database.FirebaseRecyclerOptions
 import com.firebase.ui.database.SnapshotParser
@@ -58,17 +53,10 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
-import com.google.firebase.appindexing.Action
-import com.google.firebase.appindexing.FirebaseAppIndex
-import com.google.firebase.appindexing.FirebaseUserActions
-import com.google.firebase.appindexing.Indexable
-import com.google.firebase.appindexing.builders.Indexables
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 
 import java.util.HashMap
-
-import de.hdodenhof.circleimageview.CircleImageView
 
 class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedListener {
 
@@ -88,20 +76,9 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
     private var mFirebaseAuth: FirebaseAuth? = null
     private var mFirebaseUser: FirebaseUser? = null
     private var mFirebaseDatabaseReference: DatabaseReference? = null
-    private var mFirebaseAdapter: FirebaseRecyclerAdapter<FriendlyMessage, MessageViewHolder>? =
+    private var mFirebaseAdapter: FirebaseRecyclerAdapter<FriendlyMessage, FriendlyMessageAdapter.MessageViewHolder>? =
         null
     private var mFirebaseRemoteConfig: FirebaseRemoteConfig? = null
-
-    class MessageViewHolder(v: View) : RecyclerView.ViewHolder(v) {
-        var messageTextView: TextView =
-            itemView.findViewById<View>(R.id.messageTextView) as TextView
-        var messageImageView: ImageView =
-            itemView.findViewById<View>(R.id.messageImageView) as ImageView
-        var messengerTextView: TextView =
-            itemView.findViewById<View>(R.id.messengerTextView) as TextView
-        var messengerImageView: CircleImageView =
-            itemView.findViewById<View>(R.id.messengerImageView) as CircleImageView
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -169,7 +146,10 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
         val options = FirebaseRecyclerOptions.Builder<FriendlyMessage>()
             .setQuery(messagesRef, parser)
             .build()
-        mFirebaseAdapter = FriendlyMessageMessageViewHolderFirebaseRecyclerAdapter(options)
+        mFirebaseAdapter =
+                FriendlyMessageAdapter(
+                    options, mUsername, mProgressBar
+                )
 
         mFirebaseAdapter!!.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
             override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
@@ -390,109 +370,12 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
         }
     }
 
-    private fun getMessageIndexable(friendlyMessage: FriendlyMessage): Indexable {
-        val sender = Indexables.personBuilder()
-            .setIsSelf(mUsername == friendlyMessage.name)
-            .setName(friendlyMessage.name!!)
-            .setUrl(MESSAGE_URL + (friendlyMessage.id!! + "/sender"))
-
-        val recipient = Indexables.personBuilder()
-            .setName(mUsername!!)
-            .setUrl(MESSAGE_URL + (friendlyMessage.id!! + "/recipient"))
-
-        val messageToIndex = Indexables.messageBuilder()
-            .setName(friendlyMessage.text!!)
-            .setUrl(MESSAGE_URL + friendlyMessage.id)
-            .setSender(sender)
-            .setRecipient(recipient)
-            .build()
-
-        return messageToIndex
-    }
-
-    private fun getMessageViewAction(friendlyMessage: FriendlyMessage): Action {
-        return Action.Builder(Action.Builder.VIEW_ACTION)
-            .setObject(friendlyMessage.name!!, MESSAGE_URL + friendlyMessage.id)
-            .setMetadata(Action.Metadata.Builder().setUpload(false))
-            .build()
-    }
-
     private fun sendInvitation() {
         val intent = AppInviteInvitation.IntentBuilder(getString(R.string.invitation_title))
             .setMessage(getString(R.string.invitation_message))
             .setCallToActionText(getString(R.string.invitation_cta))
             .build();
         startActivityForResult(intent, REQUEST_INVITE);
-    }
-
-    private inner class FriendlyMessageMessageViewHolderFirebaseRecyclerAdapter(
-        options: FirebaseRecyclerOptions<FriendlyMessage>
-    ) : FirebaseRecyclerAdapter<FriendlyMessage, MessageViewHolder>(options) {
-
-        override fun onCreateViewHolder(viewGroup: ViewGroup, i: Int): MessageViewHolder {
-            val inflater = LayoutInflater.from(viewGroup.context)
-            return MessageViewHolder(inflater.inflate(R.layout.item_message, viewGroup, false))
-        }
-
-        override fun onBindViewHolder(
-            viewHolder: MessageViewHolder,
-            position: Int, friendlyMessage: FriendlyMessage
-        ) {
-            mProgressBar!!.visibility = ProgressBar.INVISIBLE
-            if (friendlyMessage.text != null) {
-                viewHolder.messageTextView.text = friendlyMessage.text
-                viewHolder.messageTextView.visibility = TextView.VISIBLE
-                viewHolder.messageImageView.visibility = ImageView.GONE
-            } else if (friendlyMessage.imageUrl != null) {
-                val imageUrl = friendlyMessage.imageUrl
-                if (imageUrl!!.startsWith("gs://")) {
-                    val storageReference = FirebaseStorage.getInstance()
-                        .getReferenceFromUrl(imageUrl)
-                    storageReference.downloadUrl.addOnCompleteListener { task ->
-                        if (task.isSuccessful) {
-                            val downloadUrl = task.result!!.toString()
-                            Glide.with(viewHolder.messageImageView.context)
-                                .load(downloadUrl)
-                                .into(viewHolder.messageImageView)
-                        } else {
-                            Log.w(
-                                TAG, "Getting download url was not successful.",
-                                task.exception
-                            )
-                        }
-                    }
-                } else {
-                    Glide.with(viewHolder.messageImageView.context)
-                        .load(friendlyMessage.imageUrl)
-                        .into(viewHolder.messageImageView)
-                }
-                viewHolder.messageImageView.visibility = ImageView.VISIBLE
-                viewHolder.messageTextView.visibility = TextView.GONE
-            }
-
-
-            viewHolder.messengerTextView.text = friendlyMessage.name
-            if (friendlyMessage.userPhotoUrl == null) {
-                viewHolder.messengerImageView.setImageDrawable(
-                    ContextCompat.getDrawable(
-                        this@MainActivity,
-                        R.drawable.ic_account_circle_black_36dp
-                    )
-                )
-            } else {
-                Glide.with(this@MainActivity)
-                    .load(friendlyMessage.userPhotoUrl)
-                    .into(viewHolder.messengerImageView)
-            }
-
-            if (friendlyMessage.text != null) {
-                // write this message to the on-device index
-                FirebaseAppIndex.getInstance()
-                    .update(getMessageIndexable(friendlyMessage))
-            }
-            // log a view action on it
-            FirebaseUserActions.getInstance().end(getMessageViewAction(friendlyMessage))
-        }
     }
 
     companion object {
@@ -505,6 +388,6 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
         const val DEFAULT_MSG_LENGTH_LIMIT = 10
         const val ANONYMOUS = "anonymous"
         private const val MESSAGE_SENT_EVENT = "message_sent"
-        private const val MESSAGE_URL = "http://friendlychat.firebase.google.com/message/"
+        const val MESSAGE_URL = "http://friendlychat.firebase.google.com/message/"
     }
 }
