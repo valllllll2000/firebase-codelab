@@ -15,5 +15,10 @@
  */
 package com.google.firebase.codelab.friendlychat
 
-data class FriendlyMessage(var id: String? = null, var text: String? = null, var name: String? = null,
-                           var userPhotoUrl: String? = null, var imageUrl: String? = null)
+data class FriendlyMessage(
+    var id: String? = null,
+    var text: String? = null,
+    var name: String? = null,
+    var userPhotoUrl: String? = null,
+    var imageUrl: String? = null
+)

@@ -25,6 +25,7 @@ allprojects {
         mavenLocal()
         maven { url 'https://maven.google.com'  }
     }
+    apply from: "$rootDir/ktlint.gradle"
 }
 
 task clean(type: Delete) {

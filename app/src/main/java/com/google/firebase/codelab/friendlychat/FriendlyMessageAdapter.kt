@@ -25,16 +25,11 @@ import de.hdodenhof.circleimageview.CircleImageView
 class FriendlyMessageAdapter(
     options: FirebaseRecyclerOptions<FriendlyMessage>,
     private val mUsername: String?,
-    private val mProgressBar: ProgressBar?) :
-    FirebaseRecyclerAdapter<FriendlyMessage, FriendlyMessageAdapter.MessageViewHolder>(options) {
-    private val defaultProfileDrawable: Drawable?
+    private val mProgressBar: ProgressBar?
+) : FirebaseRecyclerAdapter<FriendlyMessage, FriendlyMessageAdapter.MessageViewHolder>(options) {
 
-    init {
-        defaultProfileDrawable = ContextCompat.getDrawable(
-            mProgressBar!!.context,
-            R.drawable.ic_account_circle_black_36dp
-        )
-    }
+    private val defaultProfileDrawable: Drawable? =
+        ContextCompat.getDrawable(mProgressBar!!.context, R.drawable.ic_account_circle_black_36dp)
 
     override fun onCreateViewHolder(viewGroup: ViewGroup, i: Int): MessageViewHolder {
         val inflater = LayoutInflater.from(viewGroup.context)

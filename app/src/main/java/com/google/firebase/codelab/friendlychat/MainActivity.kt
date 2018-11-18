@@ -39,7 +39,6 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.Toast
-
 import com.firebase.ui.database.FirebaseRecyclerAdapter
 import com.firebase.ui.database.FirebaseRecyclerOptions
 import com.firebase.ui.database.SnapshotParser
@@ -56,8 +55,7 @@ import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
-
-import java.util.HashMap
+import java.util.*
 
 class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedListener {
 
@@ -236,7 +234,6 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
             }
     }
 
-
     /**
      * Apply retrieved length limit to edit text field.
      * This result may be fresh from the server or it may be from cached
@@ -320,7 +317,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
                     onInviteSuccessful(data, resultCode)
                 } else {
                     // Sending failed or it was canceled, show failure message to the user
-                    Log.d(TAG, "Failed to send invitation.");
+                    Log.d(TAG, "Failed to send invitation.")
                 }
         }
     }
@@ -381,8 +378,8 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.OnConnectionFailedList
         val intent = AppInviteInvitation.IntentBuilder(getString(R.string.invitation_title))
             .setMessage(getString(R.string.invitation_message))
             .setCallToActionText(getString(R.string.invitation_cta))
-            .build();
-        startActivityForResult(intent, REQUEST_INVITE);
+            .build()
+        startActivityForResult(intent, REQUEST_INVITE)
     }
 
     companion object {

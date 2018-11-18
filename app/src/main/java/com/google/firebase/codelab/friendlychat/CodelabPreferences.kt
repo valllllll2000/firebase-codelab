@@ -18,5 +18,4 @@ package com.google.firebase.codelab.friendlychat
 object CodelabPreferences {
 
     val FRIENDLY_MSG_LENGTH = "friendly_msg_length"
-
 }

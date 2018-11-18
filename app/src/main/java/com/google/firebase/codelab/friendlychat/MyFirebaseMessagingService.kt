@@ -28,8 +28,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         // If you need to handle the generation of a token, initially or
         // after a refresh this is where you should do that.
         val token = FirebaseInstanceId.getInstance().token
-        Log.i(TAG, "FCM Token: " + token!!)
-        Log.i(TAG, "onNewToken string: " + s!!)
+        Log.i(TAG, "FCM Token: ${token!!}")
+        Log.i(TAG, "onNewToken string: ${s!!}")
 
         // Once a token is generated, we subscribe to topic.
         FirebaseMessaging.getInstance()
@@ -38,9 +38,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage?) {
         // Handle data payload of FCM messages.
-        Log.d(TAG, "FCM Message Id: " + remoteMessage!!.messageId!!)
-        Log.d(TAG, "FCM Notification Message: " + remoteMessage.notification!!)
-        Log.d(TAG, "FCM Data Message: " + remoteMessage.data)
+        Log.d(TAG, "FCM Message Id: ${remoteMessage!!.messageId!!}")
+        Log.d(TAG, "FCM Notification Message: ${remoteMessage.notification!!}")
+        Log.d(TAG, "FCM Data Message: ${remoteMessage.data}")
     }
 
     companion object {
@@ -48,5 +48,4 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         private const val TAG = "MyFMService"
         private const val FRIENDLY_ENGAGE_TOPIC = "friendly_engage"
     }
-
 }
